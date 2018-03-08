@@ -8,6 +8,8 @@ use JSON::Parse 'parse_json';
 use URI::Escape;
 use Data::Dumper;
 
+use Recipe;
+
 
 if (!$ARGV[0]) {
 	print qq|usage: $0 enter params seperated by spaces
@@ -15,13 +17,13 @@ if (!$ARGV[0]) {
 	exit(0);
 }
 
-my $api = 'http://www.recipepuppy.com/api/?i=';
+use constant API => 'http://www.recipepuppy.com/api/?i=';
 
 print "\nSearching for recipes containing ingredients: ", join (', ', @ARGV), "\n\n";
 
 my $agent = LWP::UserAgent->new;
 
-my $response = $agent->get( $api . uri_escape(substr(join (',', @ARGV), 0)) );
+my $response = $agent->get( API . uri_escape(substr(join (',', @ARGV), 0)) );
 
 unless ($response and $response = $response->{_content}) {
 	die();
@@ -30,10 +32,12 @@ unless ($response and $response = $response->{_content}) {
 my $recipes = (parse_json $response)->{results};
 
 foreach my $recipe (@$recipes) {
-	$recipe->{title} =~ s/^\s+|\s+$//g;
-	print $recipe->{title}, "\n";
-	print $recipe->{ingredients}, "\n";
-	print $recipe->{href}, "\n";
-	print ($recipe->{thumbnail}, "\n") if $recipe->{thumbnail};
+	my $obj = new Recipe(title =>$recipe->{title},
+						 ingredients => $recipe->{ingredients},
+						 href => $recipe->{href},
+						 thumbnail => $recipe->{thumbnail} || '' );
+
+	$obj->print;
 	print "~~~~~~~~~~~~~~~~~~~~~~~~~\n";
 }
+
